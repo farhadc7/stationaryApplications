@@ -1,7 +1,9 @@
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.gson.JsonArray;
 import org.apache.poi.xssf.usermodel.*;
 import org.openxmlformats.schemas.spreadsheetml.x2006.main.CTTable;
 
@@ -59,7 +61,7 @@ public class ExcelUtil {
                             rowInList.add(cell.getStringCellValue());
                             break;
                         case NUMERIC:
-                            rowInList.add(Double.toString(cell.getNumericCellValue()));
+                            rowInList.add(Long.toString(new Double(Math.round(cell.getNumericCellValue())).longValue()));
                             break;
                         case BOOLEAN: rowInList.add(Boolean.toString(cell.getBooleanCellValue()));
                             break;
@@ -109,19 +111,37 @@ public class ExcelUtil {
 
     private JsonNode toJsonTree(List<List<String>> list){
         ObjectMapper mapper=new ObjectMapper();
-        JsonNode rootNode= mapper.createObjectNode();
+        ArrayNode rootNode= mapper.createArrayNode();
+        ArrayNode secondNode= mapper.createArrayNode();
+        rootNode.add(secondNode);
+        int innerCounter=0;
         for(int i=1; i<list.size(); i++){
-            String nodeKey= list.get(i).get(0);
+           // String nodeKey= list.get(i).get(0);
             ObjectNode node= mapper.createObjectNode();
             for(int j=0; j< list.get(0).size(); j++){
                 node.put(list.get(0).get(j), list.get(i).get(j));
             }
-            if(rootNode.get(nodeKey) != null){
+            if(i == 1){
+                ((ArrayNode)rootNode.get(0)).add(node);
+            }else{
+                ArrayNode innerNode= (ArrayNode) rootNode.get(innerCounter);
+                if(innerNode.get(innerNode.size()-1).get("code").equals(node.get("code"))){
+                    ((ArrayNode)rootNode.get(innerCounter)).add(node);
+                }else{
+                    rootNode.add(mapper.createArrayNode());
+                    innerCounter++;
+                    ((ArrayNode)rootNode.get(innerCounter)).add(node);
+                }
+
+            }
+
+          /*
+            if(rootNode.get(i-1) != null){
                 int id = rootNode.get(nodeKey).size();
                 ((ObjectNode)rootNode.get(nodeKey)).set(Integer.toString(id+1),node);
             }else{
-                ((ObjectNode) rootNode).putObject(nodeKey).set("1", node);
-            }
+               // ((ObjectNode) rootNode).putObject(nodeKey).set("1", node);
+            }*/
         }
         //System.out.println(rootNode);
         return rootNode;
