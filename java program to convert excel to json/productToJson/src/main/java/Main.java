@@ -7,10 +7,10 @@ import java.util.Map;
 public class Main {
     private static ObjectMapper mapper=new ObjectMapper();
     public static void main(String[] args) {
-        String excelAddress= "E:\\bussineses\\stationary\\catalogue\\photoshop\\catalog.xlsx";
+        String excelAddress= "E:\\bussineses\\stationary\\catalogue\\photoshop\\schoolcatalog.xlsx";
         String tableName="products";
         String sheetName= "products";
-        String destinationJson="E:\\bussineses\\stationary\\catalogue\\photoshop\\productsJson\\products.txt";
+        String destinationJson="E:\\bussineses\\stationary\\catalogue\\photoshop\\productsJson\\schoolproducts.txt";
 
         try {
             //String res= objectMapper.writeValueAsString(orders);

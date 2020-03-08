@@ -1,12 +1,13 @@
 #include json\json2.js
+#include json\utf8\utf8-regex.js
 
 var rawImagesFolder ='E:\\bussineses\\stationary\\catalogue\\photoshop\\rawImages\\';
-var saveFolder='E:\\bussineses\\stationary\\catalogue\\photoshop\\finalImages\\';
-var productJsonFile= 'productsJson/products.json';
+var saveFolder='E:\\bussineses\\stationary\\catalogue\\photoshop\\finalImages\\school';
+var productJsonFile= 'productsJson/schoolproducts.json';
 var templatePsd ='auto1.psd';
 var separatorGroup= 'separatorGroup';
 
-var horizontalPicSize = [19 , 14];
+var horizontalPicSize = [19 , 13.5];
 var verticalPicSize = [13 , 14];
 
 var horizontalPicPosition= [0 , -2.5];
@@ -16,11 +17,14 @@ var verticalPicPosition= [0, 0];
 
 (function main(){
 	 jsonObject= loadJson(productJsonFile);
-	  pageCounter= 1;
+	 
+	 
+	pageCounter= 5;
 	for( i=0; i< jsonObject.length; i++){
-		if(jsonObject[i][0].code == "separator"){
+		if( findExistNum( jsonObject[i]) > 0 ){
+			if(jsonObject[i][0].code == "separator"){
 			processSeparatorFrame(jsonObject[i]);
-		}else{
+		}else if(!(jsonObject[i].length ==1 && (jsonObject[i][0].exists ==0 || jsonObject[i][0].exists == "-"))){
 			direction=loadImage(jsonObject[i][0].code , Array(horizontalPicSize,
 													  verticalPicSize), Array(horizontalPicPosition,
 													   verticalPicPosition));
@@ -28,8 +32,21 @@ var verticalPicPosition= [0, 0];
 			processFrame(jsonObject[i], direction);
 		}
 		pageCounter++;
+		}
+		
 	}
 })();
+
+function findExistNum(arr){
+	productRowsNum= arr.length;
+	var numberOfExistItems=0;
+	for(x=0; x<productRowsNum; x++){
+		if(arr[x].exists=="1"){
+			numberOfExistItems = numberOfExistItems +1;
+		}
+	}
+	return numberOfExistItems;
+}
 
 function processSeparatorFrame(objSep){
 	doc = app.documents.getByName(templatePsd);
@@ -74,6 +91,21 @@ function processFrame(objectConvertedFromJson, direction){
 	doc.layerSets[2].visible = false;
 	group = doc.layerSets.getByName(direction);
 	group.visible = true;
+	moveName=0
+	unitVisible=true;
+	
+
+						
+	if((objectConvertedFromJson[0].sellunitnum =="-" || objectConvertedFromJson[0].sellunitnum == "1") && 
+							( objectConvertedFromJson[0].ensellunit == "packet" || objectConvertedFromJson[0].ensellunit == "single")){
+		moveName=3;
+		unitVisible= false;
+		
+	}
+	group.layerSets.getByName("info").layerSets.getByName("tags").layerSets.getByName("unitTag").visible = unitVisible;
+	group.layerSets.getByName("info").layerSets.getByName("tags").layerSets.getByName("nameTag").translate(UnitValue(moveName ,'cm'),
+										UnitValue(0,'cm'));
+	
 	
 	group.layers.getByName("pageNumber").textItem.contents= pageCounter;
 	productRowsNum= objectConvertedFromJson.length;
@@ -83,7 +115,6 @@ function processFrame(objectConvertedFromJson, direction){
 			numberOfExistItems = numberOfExistItems +1;
 		}
 	}
-	alert(numberOfExistItems)
 	rowGroup= group.layerSets.getByName("info").layerSets.getByName(numberOfExistItems+"row");
 	rowGroup.visible= true;
 	existCounter=1;
@@ -94,11 +125,12 @@ function processFrame(objectConvertedFromJson, direction){
 			}else{
 				group.layers.getByName("mdi").visible= false;
 			}
-			alert(existCounter);
-			nameLayer= rowGroup.layerSets.getByName("l"+existCounter).layers.getByName("name");
+			var nameLayer= rowGroup.layerSets.getByName("l"+existCounter).layers.getByName("name");
+			nameLayer.translate(UnitValue(moveName ,'cm'),UnitValue(0,'cm'));
 			nameLayer.textItem.contents = objectConvertedFromJson[k].name;
 			unitLayer= rowGroup.layerSets.getByName("l"+existCounter).layers.getByName("sellunit");
-			unitLayer.textItem.contents = objectConvertedFromJson[k].sellunit;
+			unitLayer.visible = unitVisible;
+			unitLayer.textItem.contents =objectConvertedFromJson[k].sellunitnum +" "+objectConvertedFromJson[k].sellunit;
 			priceLayer= rowGroup.layerSets.getByName("l"+existCounter).layers.getByName('price');
 			priceLayer.textItem.contents= objectConvertedFromJson[k].price;
 			nameLayer= rowGroup.layerSets.getByName("l"+existCounter).layers.getByName("priceunit");
@@ -114,6 +146,17 @@ function processFrame(objectConvertedFromJson, direction){
 	paintSelection(objectConvertedFromJson[0].color, productColorLayer,1,selectionArea);
 	
 	saveJpeg(pageCounter,direction);
+	
+	if(moveName ==3){
+		moveName =-3;
+		for(h=1; h<=numberOfExistItems; h++){
+			nameLayerFinish= rowGroup.layerSets.getByName("l"+h).layers.getByName("name");
+			nameLayerFinish.translate(UnitValue(moveName ,'cm'),UnitValue(0,'cm'));
+		}
+		group.layerSets.getByName("info").layerSets.getByName("tags").layerSets.getByName("unitTag").visible = true;
+		group.layerSets.getByName("info").layerSets.getByName("tags").layerSets.getByName("nameTag").translate(UnitValue(moveName ,'cm'),
+										UnitValue(0,'cm'));
+	}
 	rowGroup.visible=false;
 	doc.layerSets.getByName(direction).layerSets.getByName("image").artLayers[0].remove();
 	
@@ -156,7 +199,7 @@ function loadImage(name,sizeArr, pArray){
 												sizeArr[directionIndex][1]);
 												
 	imageDoc.resizeImage(UnitValue(imageNewSize[0],'cm' ),
-	UnitValue(imageNewSize[1], 'cm'),72, ResampleMethod.BICUBIC );
+	UnitValue(imageNewSize[1], 'cm'),120, ResampleMethod.BICUBIC );
 	imageDoc.activeLayer.copy();
 	 doc = app.documents.getByName(templatePsd);
 	app.activeDocument = doc;

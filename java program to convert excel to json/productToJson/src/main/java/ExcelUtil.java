@@ -115,10 +115,14 @@ public class ExcelUtil {
         ArrayNode secondNode= mapper.createArrayNode();
         rootNode.add(secondNode);
         int innerCounter=0;
+        outerLoop:
         for(int i=1; i<list.size(); i++){
            // String nodeKey= list.get(i).get(0);
             ObjectNode node= mapper.createObjectNode();
             for(int j=0; j< list.get(0).size(); j++){
+                if(list.get(i).get(0).equals("-")){
+                    continue outerLoop;
+                }
                 node.put(list.get(0).get(j), list.get(i).get(j));
             }
             if(i == 1){
